@@ -1,0 +1,84 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {}
+}
+#!/data/data/com.termux/files/usr/bin/bash
+
+set -e
+
+echo "🚀 بدء ترتيب مشروع تواصل..."
+
+# إنشاء المجلدات
+mkdir -p src
+mkdir -p backend/src/workers
+mkdir -p docs
+mkdir -p prisma
+mkdir -p public
+mkdir -p .github/workflows
+
+# نقل ملفات الواجهة
+[ -f "main.jsx" ] && mv "main.jsx" "src/main.jsx"
+[ -f "styles.css" ] && mv "styles.css" "src/styles.css"
+
+# نقل ملفات Backend
+[ -f "server.js" ] && mv "server.js" "backend/src/server.js"
+[ -f "moderation-worker.js" ] && mv "moderation-worker.js" "backend/src/workers/moderation-worker.js"
+
+# نقل Prisma
+[ -f "schema.prisma" ] && mv "schema.prisma" "prisma/schema.prisma"
+
+# نقل PWA
+[ -f "manifest.webmanifest" ] && mv "manifest.webmanifest" "public/manifest.webmanifest"
+
+# نقل GitHub Actions
+[ -f "build-apk.yml" ] && mv "build-apk.yml" ".github/workflows/build-apk.yml"
+
+# نقل ملفات docs
+[ -f "PRODUCTION.md" ] && mv "PRODUCTION.md" "docs/PRODUCTION.md"
+[ -f "DEPLOY_FREE.md" ] && mv "DEPLOY_FREE.md" "docs/DEPLOY_FREE.md"
+[ -f "PRODUCTION_CHECKLIST.md" ] && mv "PRODUCTION_CHECKLIST.md" "docs/PRODUCTION_CHECKLIST.md"
+
+# نقل ملفات Backend الإضافية
+[ -f "Dockerfile" ] && mv "Dockerfile" "backend/Dockerfile"
+
+# إذا كان README الخاص بالـBackend موجودًا في الجذر
+# سيتم نقله فقط إذا كان هناك نسخة مميزة باسم backend-README.md
+[ -f "backend-README.md" ] && mv "backend-README.md" "backend/README.md"
+
+echo ""
+echo "✅ انتهى ترتيب الملفات."
+echo ""
+echo "📁 البنية الحالية:"
+find . -maxdepth 4 -type f \
+  ! -path "./.git/*" \
+  ! -path "./node_modules/*" \
+  | sort
+
+echo ""
+echo "🔎 التحقق من الملفات المهمة..."
+
+files=(
+  "package.json"
+  "index.html"
+  "README.md"
+  "capacitor.config.ts"
+  "src/main.jsx"
+  "src/styles.css"
+  "backend/src/server.js"
+  "backend/src/workers/moderation-worker.js"
+  "prisma/schema.prisma"
+  "public/manifest.webmanifest"
+  ".github/workflows/build-apk.yml"
+)
+
+for file in "${files[@]}"; do
+  if [ -f "$file" ]; then
+    echo "✅ $file"
+  else
+    echo "⚠️ غير موجود: $file"
+  fi
+done
+
+echo ""
+echo "🎉 تم ترتيب المشروع."
+echo "الخطوة التالية: git add . && git commit -m 'Fix project structure' && git push"
