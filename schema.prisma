@@ -1,0 +1,44 @@
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client { provider = "prisma-client-js" }
+
+enum Visibility { PUBLIC FRIENDS PRIVATE }
+enum UserRole { USER MODERATOR ADMIN SUPERADMIN }
+enum OrderStatus { PENDING PAID PROCESSING SHIPPED DELIVERED CANCELLED REFUNDED }
+enum LedgerType { CREDIT DEBIT HOLD RELEASE }
+enum ModerationStatus { PENDING APPROVED BLOCKED REVIEW }
+
+model User {
+  id String @id @default(cuid())
+  email String? @unique
+  phone String? @unique
+  passwordHash String
+  name String
+  username String @unique
+  bio String?
+  avatarUrl String?
+  selfieUrl String?
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+  isVerified Boolean @default(false)
+  isBanned Boolean @default(false)
+  role UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions Session[]
+  posts Post[]
+  stores Store[]
+  orders Order[] @relation("buyer")
+  ledger LedgerEntry[]
+  sentMessages Message[] @relation("sender")
+  receivedMessages Message[] @relation("receiver")
+}
+model Session { id String @id @default(cuid()); userId String; refreshHash String; expiresAt DateTime; user User @relation(fields:[userId], references:[id], onDelete:Cascade); createdAt DateTime @default(now()) }
+model Post { id String @id @default(cuid()); authorId String; body String; visibility Visibility @default(PUBLIC); mediaUrl String?; moderation ModerationStatus @default(PENDING); createdAt DateTime @default(now()); author User @relation(fields:[authorId], references:[id], onDelete:Cascade) }
+model Conversation { id String @id @default(cuid()); participants User[]; messages Message[]; createdAt DateTime @default(now()) }
+model Message { id String @id @default(cuid()); conversationId String; senderId String; receiverId String?; body String?; mediaUrl String?; disappearsAt DateTime?; createdAt DateTime @default(now()); conversation Conversation @relation(fields:[conversationId], references:[id], onDelete:Cascade); sender User @relation("sender", fields:[senderId], references:[id], onDelete:Cascade); receiver User? @relation("receiver", fields:[receiverId], references:[id], onDelete:SetNull) }
+model Store { id String @id @default(cuid()); ownerId String; name String; slug String @unique; logoUrl String?; owner User @relation(fields:[ownerId], references:[id], onDelete:Cascade); products Product[]; orders Order[]; createdAt DateTime @default(now()) }
+model Product { id String @id @default(cuid()); storeId String; name String; description String?; priceCents Int; currency String @default("DZD"); stock Int @default(0); mediaUrl String?; store Store @relation(fields:[storeId], references:[id], onDelete:Cascade); items OrderItem[] }
+model Order { id String @id @default(cuid()); buyerId String; storeId String; totalCents Int; currency String @default("DZD"); status OrderStatus @default(PENDING); buyer User @relation("buyer", fields:[buyerId], references:[id]); store Store @relation(fields:[storeId], references:[id]); items OrderItem[]; createdAt DateTime @default(now()) }
+model OrderItem { id String @id @default(cuid()); orderId String; productId String; quantity Int; unitPriceCents Int; order Order @relation(fields:[orderId], references:[id], onDelete:Cascade); product Product @relation(fields:[productId], references:[id]) }
+model LedgerEntry { id String @id @default(cuid()); userId String; amountCents Int; currency String @default("DZD"); type LedgerType; reference String?; user User @relation(fields:[userId], references:[id], onDelete:Cascade); createdAt DateTime @default(now()) }
+model AuditLog { id String @id @default(cuid()); userId String?; action String; ip String?; metadata Json?; createdAt DateTime @default(now()) }
